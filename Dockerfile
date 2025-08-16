@@ -11,7 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code
 COPY volunteer-analytics-cloud.py .
 
+# Expose the port that the container will listen on
 EXPOSE 8080
 
 # Define the command to start the function
-CMD ["functions-framework", "--target", "generate_and_save_plots", "--port", "8080"]
+CMD ["functions-framework", "--target", "generate_and_save_plots", "--source", "volunteer-analytics-cloud.py", "--port", "8080"]

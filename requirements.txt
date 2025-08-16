@@ -4,8 +4,9 @@ gspread == 5.12.4
 oauth2client == 4.1.3
 yagmail >= 0.15.293
 pandas == 2.2.2
+matplotlib
 google-api-python-client == 2.176.0
-google-cloud-aiplatform #this is required
-google-cloud-logging  #this is required
-google-cloud-storage # for cloud storage
+google-cloud-aiplatform
+google-cloud-logging
+google-cloud-storage
 functions-framework

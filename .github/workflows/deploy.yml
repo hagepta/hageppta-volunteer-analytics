@@ -58,4 +58,3 @@ jobs:
 
       - name: Show Deployment URL
         run: echo "Cloud Run service URL: ${{ steps.deploy.outputs.url }}"
-

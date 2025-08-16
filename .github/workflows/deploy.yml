@@ -56,5 +56,3 @@ jobs:
           set_secrets: |
             /etc/secrets/credentials.json=volunteer_analytics:latest
             
-
-

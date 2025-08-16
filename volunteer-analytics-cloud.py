@@ -89,6 +89,9 @@ def plot_cumulative_hours(df, bucket_name, client):
     save_plot_to_gcs(client, bucket_name, buf, 'cumulative_hours_plot.png')
 
 def plot_sorted_total_hours_by_date(df, bucket_name, client):
+    """
+    Plots the total volunteer hours for each date, sorted from highest to lowest.
+    """
     try:
         df['submission_date'] = pd.to_datetime(df['submission_date'])
         df['hours'] = pd.to_numeric(df['hours'])
@@ -114,3 +117,10 @@ def plot_sorted_total_hours_by_date(df, bucket_name, client):
     plt.savefig(buf, format='png')
     plt.close()
     save_plot_to_gcs(client, bucket_name, buf, 'total_hours_plot.png')
+
+
+#gcloud builds submit --tag gcr.io/hage-pta/pta-analytics-job --region us-central1
+#gcloud run deploy pta-analytics-job \    --image gcr.io/hage-pta/pta-analytics-job \
+#    --region us-central1 \
+#    --allow-unauthenticated \
+#    --set-secrets=/etc/secrets/credentials.json=volunteer_analytics:latest

@@ -6,55 +6,43 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - main
+      - main # Trigger on pushes to the 'main' branch
 
-# Define the environment variables for your project
 env:
-  PROJECT_ID: hage-pta  # Replace with your Google Cloud Project ID
-  SERVICE_NAME: pta-analytics-job  # Replace with your Cloud Run service name
-  REGION: us-central1  # Replace with your Cloud Run region
+  PROJECT_ID: hage-pta # Replace with your GCP Project ID
+  SERVICE_NAME: pta-analytics-job # The name of your Cloud Run service
+  REGION: us-central1 # The region of your Cloud Run service
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
-    # Set up permissions for the GHA service account
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+  deploy:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4 # Action to checkout your repository code
 
-      - name: Authenticate with Google Cloud
-        id: 'auth'
-        uses: 'google-github-actions/auth@v2'
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2 # Action to authenticate with GCP
         with:
-          # Use the service account key stored as a GitHub secret
-          # You need to create a secret named GOOGLE_CREDENTIALS in your GitHub repo settings.
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }} # Use the GitHub secret for credentials
 
-      - name: Build and Push Docker Image to Cloud Build
-        # This command uses gcloud to build the container based on your Dockerfile
-        # in the current directory and pushes it to your project's Container Registry.
-        run: gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME --region $REGION
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2 # Action to set up gcloud CLI
+        with:
+          project_id: ${{ env.PROJECT_ID }} # Use the project ID from environment variables
 
       - name: Deploy to Cloud Run
-        id: 'deploy'
-        uses: 'google-github-actions/deploy-cloud-run@v2'
-        with:
-          service: ${{ env.SERVICE_NAME }}
-          region: ${{ env.REGION }}
-          # The image is the one we just built and pushed
-          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
-          # The service account used must have permissions to access the secret.
-          service_account: 851523245563-compute@developer.gserviceaccount.com
-          # This flag allows unauthenticated access for your Cloud Scheduler job
-          allow_unauthenticated: true
-          # This parameter attaches the secret to the Cloud Run service
-          set_secrets: |
-            /etc/secrets/credentials.json=volunteer_analytics:latest
-            
-
-
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --source . \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-secrets=/etc/secrets/credentials.json=volunteer_analytics:latest \
+            --project=${{ env.PROJECT_ID }}
+        # This command will:
+        # 1. Trigger Cloud Build to build your Docker image from the Dockerfile in '.'
+        # 2. Push the image to Google Artifact Registry.
+        # 3. Deploy the new image to your Cloud Run service.
+        # 4. Mount the Secret Manager secret as a file at the correct path.

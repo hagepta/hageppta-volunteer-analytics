@@ -55,8 +55,6 @@ jobs:
           # This parameter attaches the secret to the Cloud Run service
           set_secrets: |
             /etc/secrets/credentials.json=volunteer_analytics:latest
-
-      - name: Show Deployment URL
-        run: echo "Cloud Run service URL: ${{ steps.deploy.outputs.url }}"
+            
 
 

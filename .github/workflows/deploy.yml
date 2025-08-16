@@ -1,0 +1,61 @@
+# This workflow automatically builds and deploys the Cloud Run service
+# when a change is pushed to the 'main' branch.
+
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+# Define the environment variables for your project
+env:
+  PROJECT_ID: hage-pta  # Replace with your Google Cloud Project ID
+  SERVICE_NAME: pta-analytics-job  # Replace with your Cloud Run service name
+  REGION: us-central1  # Replace with your Cloud Run region
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    # Set up permissions for the GHA service account
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          # Use the service account key stored as a GitHub secret
+          # You need to create a secret named GOOGLE_CREDENTIALS in your GitHub repo settings.
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+
+      - name: Build and Push Docker Image to Cloud Build
+        # This command uses gcloud to build the container based on your Dockerfile
+        # in the current directory and pushes it to your project's Container Registry.
+        run: gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME --region $REGION
+
+      - name: Deploy to Cloud Run
+        id: 'deploy'
+        uses: 'google-github-actions/deploy-cloud-run@v2'
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          # The image is the one we just built and pushed
+          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
+          # The service account used must have permissions to access the secret.
+          service_account: 851523245563-compute@developer.gserviceaccount.com
+          # This flag allows unauthenticated access for your Cloud Scheduler job
+          allow_unauthenticated: true
+          # This parameter attaches the secret to the Cloud Run service
+          set_secrets: |
+            /etc/secrets/credentials.json=volunteer_analytics:latest
+
+      - name: Show Deployment URL
+        run: echo "Cloud Run service URL: ${{ steps.deploy.outputs.url }}"
+
